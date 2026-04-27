@@ -1,4 +1,5 @@
 import os
+import certifi
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from pymongo import MongoClient
@@ -19,8 +20,9 @@ class Student(db.Model):
 # --- 2. ربط قاعدة البيانات NoSQL (MongoDB Atlas) ---
 mongo_uri = "mongodb+srv://zineb_admin:2004%2F10%2F04@cluster0.2ex5tcr.mongodb.net/?retryWrites=true&w=majority"
 # تحسين للذاكرة: تعريف الـ client مرة واحدة فقط خارج الـ routes
+ca = certifi.where()
 # واستخدام connect=False لتجنب بدء العمليات قبل الحاجة إليها
-mongo_client = MongoClient(mongo_uri, connect=False, maxPoolSize=1)
+mongo_client = MongoClient(mongo_uri, tlsCAFile=ca, connect=False, maxPoolSize=1)
 nosql_db = mongo_client["TP_Cloud_Zineb"]
 
 @app.route('/')
