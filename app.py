@@ -18,7 +18,7 @@ class Student(db.Model):
 
 # --- 2. ربط قاعدة البيانات NoSQL (MongoDB Atlas) ---
 # تم وضع كلمة السر الخاصة بك في الرابط
-mongo_uri = "mongodb+srv://zineb_admin:2004/10/04@cluster0.2ex5tcr.mongodb.net/?appName=Cluster0"
+mongo_uri = "mongodb+srv://zineb_admin:2004%2F10%2F04@cluster0.2ex5tcr.mongodb.net/?retryWrites=true&w=majority"
 mongo_client = MongoClient(mongo_uri)
 nosql_db = mongo_client["TP_Cloud_Zineb"]
 
