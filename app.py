@@ -56,6 +56,6 @@ def home():
         return f"<h1 style='color:red;'>Error connecting to Cloud:</h1><p>{str(e)}</p>"
 
 if __name__ == "__main__":
-    # إعداد المنفذ (Port) ليتناسب مع خوادم الويب مثل Render
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    # Render يعطينا المنفذ عبر متغير بيئة اسمه PORT
+    port = int(os.environ.get("PORT", 5000)) 
+    app.run(host="0.0.0.0", port=port)
