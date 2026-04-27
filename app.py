@@ -6,28 +6,30 @@ from pymongo import MongoClient
 app = Flask(__name__)
 
 # --- 1. ربط قاعدة البيانات SQL (Neon) ---
-# استخدمت الرابط الذي ينتهي بـ pooler لضمان استقرار الاتصال على السحابة
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://neondb_owner:npg_FS9lf5OWXApx@ep-empty-scene-anpilbym-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# تحسين: إضافة pool_pre_ping لضمان عدم انقطاع الاتصال بـ Neon
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"pool_pre_ping": True}
 db = SQLAlchemy(app)
 
-# تعريف جدول بسيط لتخزين بيانات الطلاب في SQL
 class Student(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
 
 # --- 2. ربط قاعدة البيانات NoSQL (MongoDB Atlas) ---
-# تم وضع كلمة السر الخاصة بك في الرابط
 mongo_uri = "mongodb+srv://zineb_admin:2004%2F10%2F04@cluster0.2ex5tcr.mongodb.net/?retryWrites=true&w=majority"
-mongo_client = MongoClient(mongo_uri)
+# تحسين للذاكرة: تعريف الـ client مرة واحدة فقط خارج الـ routes
+# واستخدام connect=False لتجنب بدء العمليات قبل الحاجة إليها
+mongo_client = MongoClient(mongo_uri, connect=False, maxPoolSize=1)
 nosql_db = mongo_client["TP_Cloud_Zineb"]
 
 @app.route('/')
 def home():
     try:
-        # أ. العمل على SQL: إنشاء الجدول وإضافة سجل تجريبي
+        # العمل على SQL
         db.create_all()
-        if not Student.query.filter_by(name="Zineb").first():
+        student = Student.query.filter_by(name="Zineb").first()
+        if not student:
             new_student = Student(name="Zineb")
             db.session.add(new_student)
             db.session.commit()
@@ -35,7 +37,7 @@ def home():
         else:
             sql_status = "Student already exists in SQL."
 
-        # ب. العمل على NoSQL: إضافة سجل نشاط في MongoDB
+        # العمل على NoSQL
         nosql_db.activity_logs.insert_one({
             "event": "Project_Access",
             "student": "Zineb",
@@ -53,9 +55,11 @@ def home():
         </div>
         """
     except Exception as e:
+        # تحسين: طباعة الخطأ في الـ Logs لمراقبته
+        print(f"Error: {e}")
         return f"<h1 style='color:red;'>Error connecting to Cloud:</h1><p>{str(e)}</p>"
 
 if __name__ == "__main__":
-    # Render يعطينا المنفذ عبر متغير بيئة اسمه PORT
-    port = int(os.environ.get("PORT", 5000)) 
-    app.run(host="0.0.0.0", port=10000)
+    # تعديل نهائي لضمان توافق المنفذ مع Render
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
