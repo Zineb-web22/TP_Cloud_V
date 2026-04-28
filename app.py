@@ -7,9 +7,9 @@ from pymongo import MongoClient
 app = Flask(__name__)
 
 # --- 1. ربط قاعدة البيانات SQL (Neon) ---
+# التأكد من استخدام SSL لضمان الاتصال السحابي الآمن
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://neondb_owner:npg_FS9lf5OWXApx@ep-empty-scene-anpilbym-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-# تحسين: إضافة pool_pre_ping لضمان عدم انقطاع الاتصال بـ Neon
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"pool_pre_ping": True}
 db = SQLAlchemy(app)
 
@@ -18,11 +18,12 @@ class Student(db.Model):
     name = db.Column(db.String(50), nullable=False)
 
 # --- 2. ربط قاعدة البيانات NoSQL (MongoDB Atlas) ---
+# التعديل هنا: استخدام certifi بشكل صريح لحل مشكلة SSL Handshake
 mongo_uri = "mongodb+srv://zineb_admin:2004%2F10%2F04@cluster0.2ex5tcr.mongodb.net/?retryWrites=true&w=majority"
-# تحسين للذاكرة: تعريف الـ client مرة واحدة فقط خارج الـ routes
-ca = certifi.where()
-# واستخدام connect=False لتجنب بدء العمليات قبل الحاجة إليها
-mongo_client = MongoClient(mongo_uri, tlsCAFile=ca, connect=False, maxPoolSize=1)
+ca = certifi.where() #
+
+# تحسين الذاكرة: تقليل عدد الاتصالات (maxPoolSize) لتجنب SIGKILL
+mongo_client = MongoClient(mongo_uri, tlsCAFile=ca, connect=False, maxPoolSize=1) #
 nosql_db = mongo_client["TP_Cloud_Zineb"]
 
 @app.route('/')
@@ -57,11 +58,10 @@ def home():
         </div>
         """
     except Exception as e:
-        # تحسين: طباعة الخطأ في الـ Logs لمراقبته
-        print(f"Error: {e}")
+        print(f"Detailed Error: {e}")
         return f"<h1 style='color:red;'>Error connecting to Cloud:</h1><p>{str(e)}</p>"
 
 if __name__ == "__main__":
-    # تعديل نهائي لضمان توافق المنفذ مع Render
-    port = int(os.environ.get("PORT", 10000))
+    # Render يتطلب الاستماع على 0.0.0.0 والمنفذ المحدد في البيئة
+    port = int(os.environ.get("PORT", 10000)) #
     app.run(host="0.0.0.0", port=port)
